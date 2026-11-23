@@ -19,6 +19,7 @@ jobs:
         run: |
           unzip -o "KurirKita (1).zip"
           cd KurirKita
+          echo 'tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach { compilerOptions { freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api") } }' >> app/build.gradle.kts
           gradle assembleDebug
       - name: Upload APK
         uses: actions/upload-artifact@v4
