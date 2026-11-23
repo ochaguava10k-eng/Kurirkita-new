@@ -18,7 +18,7 @@ jobs:
 
       - name: Unzip project
         run: |
-          unzip -o KurirKita-new.zip -d project
+          unzip -o "*.zip" -d project
           ls -R project | head -n 100
 
       - name: FixNavGraph
