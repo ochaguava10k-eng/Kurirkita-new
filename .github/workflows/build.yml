@@ -15,16 +15,23 @@ jobs:
           distribution: 'temurin'
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
-      - name: Buka ZIP dan Liat File
-        run: |
-          unzip -o "KurirKita (1).zip"
-          cd KurirKita
-          find app/src -name "NavGraph.kt" -exec cat {} \;
       - name: Buka ZIP dan Build
         run: |
           unzip -o "KurirKita (1).zip"
           cd KurirKita
           echo 'tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach { compilerOptions { freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api") } }' >> app/build.gradle.kts
+          python3 -c "
+          import pathlib
+          p = list(pathlib.Path('app/src').rglob('NavGraph.kt'))[0]
+          t = p.read_text()
+          print(t[0:2000])
+          t = t.replace('Scaffold {', 'Scaffold { paddingValues ->')
+          t = t.replace('.padding(padding)', '.padding(paddingValues)')
+          t = t.replace('padding(padding)', 'padding(paddingValues)')
+          p.write_text(t)
+          print('--- FIXED ---')
+          print(p.read_text()[0:2000])
+          "
           gradle assembleDebug
       - name: Upload APK
         uses: actions/upload-artifact@v4
