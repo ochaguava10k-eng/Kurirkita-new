@@ -20,15 +20,14 @@ jobs:
           unzip -o "KurirKita (1).zip"
           cd KurirKita
           echo 'tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach { compilerOptions { freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api") } }' >> app/build.gradle.kts
-          python3 -c "
-          import pathlib
-          p = list(pathlib.Path('app/src').rglob('NavGraph.kt'))[0]
-          t = p.read_text()
-          t = t.replace('{ padding ->', '{ paddingValues ->')
-          t = t.replace('(padding)', '(paddingValues)')
-          p.write_text(t)
-          print('FIXED - sekarang sudah sama')
-          "
+          python3 << 'PY'
+          import pathlib, re
+          for p in pathlib.Path('app/src').rglob('NavGraph.kt'):
+              t = p.read_text()
+              t = re.sub(r'\bpadding\b', 'paddingValues', t)
+              p.write_text(t)
+              print('FIXED', p)
+          PY
           gradle assembleDebug
       - name: Upload APK
         uses: actions/upload-artifact@v4
