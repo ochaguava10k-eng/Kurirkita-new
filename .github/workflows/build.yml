@@ -24,9 +24,32 @@ jobs:
           import pathlib, re
           for p in pathlib.Path('app/src').rglob('NavGraph.kt'):
               t = p.read_text()
-              t = re.sub(r'\bpadding\b', 'paddingValues', t)
+              # 1. Balikin fungsi Modifier.padding yang ke-ganti tadi
+              t = t.replace('Modifier.paddingValues(', 'Modifier.padding(')
+              t = t.replace('.paddingValues(', '.padding(')
+              # 2. Samain nama variabel jadi paddingValues
+              t = t.replace('padding ->', 'paddingValues ->')
+              t = re.sub(r'\(\s*padding\s*\)', '(paddingValues)', t)
+              # 3. Kalau Scaffold-nya bolong (nggak ada ->), tambahin
+              out = ""
+              i = 0
+              while True:
+                  j = t.find('Scaffold', i)
+                  if j == -1:
+                      out += t[i:]
+                      break
+                  k = t.find('{', j)
+                  if k == -1:
+                      out += t[i:]
+                      break
+                  out += t[i:k+1]
+                  after = t[k+1:k+60]
+                  if '->' not in after.split('\n')[0] and 'paddingValues' in t[k:k+500]:
+                      out += ' paddingValues -> '
+                  i = k+1
+              t = out
               p.write_text(t)
-              print('FIXED', p)
+              print('FIXED TOTAL', p)
           PY
           gradle assembleDebug
       - name: Upload APK
