@@ -1,73 +1,73 @@
 name: Build APK
-on: [push, workflow_dispatch]
+
+on:
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
-      - name: Unzip project
-        run: |
-          unzip -o "KurirKita (1).zip" -d project
-          ls project/KurirKita
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-      - name: Fix NavGraph
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Unzip project
         run: |
-          cat > project/KurirKita/app/src/main/java/com/kurirkita/app/ui/navigation/NavGraph.kt <<'EOF'
+          unzip -o KurirKita-new.zip -d project
+          ls -R project | head -n 100
+
+      - name: FixNavGraph
+        run: |
+          cat > project/KurirKita/app/src/main/java/com/kurirkita/app/ui/navigation/NavGraph.kt << 'EOF'
           package com.kurirkita.app.ui.navigation
-          import androidx.compose.material3.Scaffold
+
           import androidx.compose.runtime.Composable
-          import androidx.compose.runtime.getValue
-          import androidx.compose.ui.Modifier
-          import androidx.compose.foundation.layout.padding
+          import androidx.navigation.NavHostController
           import androidx.navigation.compose.NavHost
           import androidx.navigation.compose.composable
-          import androidx.navigation.compose.currentBackStackEntryAsState
-          import androidx.navigation.compose.rememberNavController
-          import com.kurirkita.app.ui.components.BottomNavBar
-          import com.kurirkita.app.ui.screens.home.HomeScreen
-          import com.kurirkita.app.ui.screens.login.LoginScreen
-          import com.kurirkita.app.ui.screens.orders.OrderListScreen
-          import com.kurirkita.app.ui.screens.profile.ProfileScreen
-          import com.kurirkita.app.ui.screens.settings.RingtoneSettingsScreen
-          import com.kurirkita.app.ui.screens.wallet.WalletScreen
-          private val mainRoutes = setOf(Routes.HOME, Routes.ORDERS, Routes.WALLET, Routes.PROFILE)
+          import com.kurirkita.app.ui.screens.DashboardScreen
+          import com.kurirkita.app.ui.screens.LoginScreen
+          import com.kurirkita.app.ui.screens.OrderDetailScreen
+          import com.kurirkita.app.ui.screens.OrdersScreen
+          import com.kurirkita.app.ui.screens.ProfileScreen
+          import com.kurirkita.app.ui.screens.RegisterScreen
+          import com.kurirkita.app.ui.screens.WalletScreen
+
           @Composable
-          fun KurirKitaNavGraph() {
-            val navController = rememberNavController()
-            val backStackEntry by navController.currentBackStackEntryAsState()
-            val showBottomBar = backStackEntry?.destination?.route in mainRoutes
-            Scaffold(
-              bottomBar = {
-                if (showBottomBar) BottomNavBar(navController)
+          fun NavGraph(navController: NavHostController, startDestination: String = Routes.LOGIN) {
+              NavHost(navController = navController, startDestination = startDestination) {
+                  composable(Routes.LOGIN) { LoginScreen(navController) }
+                  composable(Routes.REGISTER) { RegisterScreen(navController) }
+                  composable(Routes.DASHBOARD) { DashboardScreen(navController) }
+                  composable(Routes.ORDERS) { OrdersScreen(navController) }
+                  composable(Routes.ORDER_DETAIL) { OrderDetailScreen(navController) }
+                  composable(Routes.WALLET) { WalletScreen() }
+                  composable(Routes.PROFILE) { ProfileScreen(navController) }
               }
-            ) { padding ->
-              NavHost(
-                navController = navController,
-                startDestination = Routes.LOGIN,
-                modifier = Modifier.padding(padding)
-              ) {
-                composable(Routes.LOGIN) { LoginScreen(navController) }
-                composable(Routes.HOME) { HomeScreen(navController) }
-                composable(Routes.ORDERS) { OrderListScreen(navController) }
-                composable(Routes.WALLET) { WalletScreen(navController) }
-                composable(Routes.PROFILE) { ProfileScreen(navController) }
-                composable(Routes.RINGTONE_SETTINGS) { RingtoneSettingsScreen(navController) }
-              }
-            }
           }
           EOF
+
+      - name: Fix Experimental API
+        run: |
+          cd project/KurirKita
+          echo "kotlinOptions { freeCompilerArgs += '-opt-in=androidx.compose.material3.ExperimentalMaterial3Api' }" >> app/build.gradle.kts
+
       - name: Build APK
         run: |
           cd project/KurirKita
-          gradle assembleDebug
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: KurirKita-APK
-          path: "**/build/outputs/apk/debug/*.apk"
+          name: app-debug
+          path: project/KurirKita/app/build/outputs/apk/debug/app-debug.apk
