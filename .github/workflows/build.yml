@@ -16,9 +16,52 @@ jobs:
           distribution: 'temurin'
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
-      - name: Liat NavGraph
+      - name: Fix NavGraph
         run: |
-          cat project/KurirKita/app/src/main/java/com/kurirkita/app/ui/navigation/NavGraph.kt
+          cat > project/KurirKita/app/src/main/java/com/kurirkita/app/ui/navigation/NavGraph.kt <<'EOF'
+          package com.kurirkita.app.ui.navigation
+          import androidx.compose.material3.Scaffold
+          import androidx.compose.runtime.Composable
+          import androidx.compose.runtime.getValue
+          import androidx.compose.ui.Modifier
+          import androidx.compose.foundation.layout.padding
+          import androidx.navigation.compose.NavHost
+          import androidx.navigation.compose.composable
+          import androidx.navigation.compose.currentBackStackEntryAsState
+          import androidx.navigation.compose.rememberNavController
+          import com.kurirkita.app.ui.components.BottomNavBar
+          import com.kurirkita.app.ui.screens.home.HomeScreen
+          import com.kurirkita.app.ui.screens.login.LoginScreen
+          import com.kurirkita.app.ui.screens.orders.OrderListScreen
+          import com.kurirkita.app.ui.screens.profile.ProfileScreen
+          import com.kurirkita.app.ui.screens.settings.RingtoneSettingsScreen
+          import com.kurirkita.app.ui.screens.wallet.WalletScreen
+          private val mainRoutes = setOf(Routes.HOME, Routes.ORDERS, Routes.WALLET, Routes.PROFILE)
+          @Composable
+          fun KurirKitaNavGraph() {
+            val navController = rememberNavController()
+            val backStackEntry by navController.currentBackStackEntryAsState()
+            val showBottomBar = backStackEntry?.destination?.route in mainRoutes
+            Scaffold(
+              bottomBar = {
+                if (showBottomBar) BottomNavBar(navController)
+              }
+            ) { padding ->
+              NavHost(
+                navController = navController,
+                startDestination = Routes.LOGIN,
+                modifier = Modifier.padding(padding)
+              ) {
+                composable(Routes.LOGIN) { LoginScreen(navController) }
+                composable(Routes.HOME) { HomeScreen(navController) }
+                composable(Routes.ORDERS) { OrderListScreen(navController) }
+                composable(Routes.WALLET) { WalletScreen(navController) }
+                composable(Routes.PROFILE) { ProfileScreen(navController) }
+                composable(Routes.RINGTONE_SETTINGS) { RingtoneSettingsScreen(navController) }
+              }
+            }
+          }
+          EOF
       - name: Build APK
         run: |
           cd project/KurirKita
