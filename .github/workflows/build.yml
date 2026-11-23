@@ -15,6 +15,11 @@ jobs:
           distribution: 'temurin'
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v3
+      - name: Buka ZIP dan Liat File
+        run: |
+          unzip -o "KurirKita (1).zip"
+          cd KurirKita
+          find app/src -name "NavGraph.kt" -exec cat {} \;
       - name: Buka ZIP dan Build
         run: |
           unzip -o "KurirKita (1).zip"
